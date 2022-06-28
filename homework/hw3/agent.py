@@ -27,20 +27,20 @@ class AgentDQN:
 		random.seed(42)
 		tf.keras.utils.set_random_seed(42)
 		# INITs
-		self.env = env
-		self.Q_target = DQN(env, learning_rate)
-		self.Q = DQN(env, learning_rate)
+		self.env           = env
+		self.Q_target      = DQN(env, learning_rate)
+		self.Q             = DQN(env, learning_rate)
 		self.Q_target.set_weights(self.Q.get_weights())
-		self.action_space = env.action_space.n
-		self.buffer = ReplayBuffer(buffer_size, env)
-		self.gamma = gamma
-		self.epsilon = epsilon
+		self.action_space  = env.action_space.n
+		self.buffer        = ReplayBuffer(buffer_size, env)
+		self.gamma         = gamma
+		self.epsilon       = epsilon
 		self.epsilon_decay = epsilon_decay
-		self.epsilon_min = epsilon_min
-		self.tau = tau
-		self.avr_decay = avr_decay
+		self.epsilon_min   = epsilon_min
+		self.tau           = tau
+		self.avr_decay     = avr_decay
 		self.learning_rate = learning_rate
-		self.batch_size = batch_size
+		self.batch_size    = batch_size
 
 
 	def __call__(self, O, sample=True):
@@ -111,27 +111,20 @@ class AgentDQN:
 		self.score_avr = 0
 		self.history = {'L': [], 'G': [], 'S': []}
 		self.init = False
-		if os.path.exists(self.BUFFER_PATH) and False:
+		if os.path.exists(self.BUFFER_PATH):
 			self.buffer.load(self.BUFFER_PATH)
 			self.G_init = True
 		else:
-			with tqdm(total=10000) as bar:#self.buffer.size
+			with tqdm(total=self.buffer.size) as bar:#
 				bar.set_description('Filling Buffer')
-				for _ in range(10000):#while not self.buffer.full:
+				while not self.buffer.full:
 					O, done = self.step(O)
 					bar.update(1)
 			self.buffer.save(self.BUFFER_PATH)
 		with tqdm(total=episodes) as bar:
 			bar.set_description('Training Agent')
 			for episode in range(episodes):
-				# POLYAK AVERAGING
 				#print('Pre ', np.sum(self.Q.predict(O[None,...]) - self.Q_target.predict(O[None,...])))
-				Q_target_weigths = self.Q_target.get_weights()
-				Q_weights 		 = self.Q.get_weights()
-				polyak_average   = [(1 - self.tau) * Q_t + self.tau * Q for Q_t, Q in zip(Q_target_weigths, Q_weights)]
-				self.Q_target.set_weights(polyak_average)
-				#print('Post', np.sum(self.Q.predict(O[None,...]) - self.Q_target.predict(O[None,...])))
-				self.epsilon = max(self.epsilon * self.epsilon_decay, self.epsilon_min)
 				done = False
 				while not done:
 					for k in range(K):
@@ -159,7 +152,15 @@ class AgentDQN:
 					#print(Qs.shape, y.shape, self.Q(Os_init).shape, As.shape)
 					#print('L:', loss.numpy())
 					#print('Q:', Qs.numpy())
+					
+					# POLYAK AVERAGING
 					self.Q.optimizer.apply_gradients(zip(gradients, self.Q.trainable_weights))
+					Q_target_weigths = self.Q_target.get_weights()
+					Q_weights 		 = self.Q.get_weights()
+					polyak_average   = [(1 - self.tau) * Q_t + self.tau * Q for Q_t, Q in zip(Q_target_weigths, Q_weights)]
+					self.Q_target.set_weights(polyak_average)
+					#print('Post', np.sum(self.Q.predict(O[None,...]) - self.Q_target.predict(O[None,...])))
+					self.epsilon = max(self.epsilon * self.epsilon_decay, self.epsilon_min)
 				bar.update(1)
 				if video_path is not None and episode % 100 == 0:
 					try:
@@ -194,8 +195,8 @@ if __name__ == '__main__':
 
 	env = gym.make('LunarLander-v2')
 	agent = AgentDQN(env, 
-		buffer_size=100_000, 
-		batch_size=64, 
+		buffer_size=1_000, 
+		batch_size=32, 
 		tau=1e-3, 
 		gamma=0.99, 
 		learning_rate=1e-3, 
@@ -210,14 +211,14 @@ if __name__ == '__main__':
 
 	#agent.Q_target.save_weights('lunar_lander_init_e2000_target.pd')
 	#agent.Q.save_weights('lunar_lander_init_e2000.pd')
-	agent.buffer.load('dqn_lunar_lander.erb')
-	agent.Q_target.load_weights('lunar_lander_e2000_target.pd')
-	agent.Q.load_weights('lunar_lander_e2000.pd')
-	history = agent.train(episodes=2000, K=4, video_path='video') # inint K/10 N/10 G/-100
-	agent.Q_target.save_weights('lunar_lander_e2000_target.pd')
-	agent.Q.save_weights('lunar_lander_e2000.pd')
-	agent.buffer.save('dqn_lunar_lander.erb')
+	#agent.buffer.load('dqn_lunar_lander.erb')
+	#agent.Q_target.load_weights('lunar_lander_e2000_target.pd')
+	#agent.Q.load_weights('lunar_lander_e2000.pd')
+	history = agent.train(episodes=200, K=1)#, video_path='video') # inint K/10 N/10 G/-100
+	#agent.Q_target.save_weights('lunar_lander_e2000_target.pd')
+	#agent.Q.save_weights('lunar_lander_e2000.pd')
+	#agent.buffer.save('dqn_lunar_lander.erb')
 	#agent.Q.load_weights('lunar_lander_e100_n100_k1.pd')
-	plt.plot(range(len(history)), history)
-	print('Return:', agent.show())
-	plt.show()
+	#plt.plot(range(len(history)), history)
+	#print('Return:', agent.show())
+	#plt.show()
