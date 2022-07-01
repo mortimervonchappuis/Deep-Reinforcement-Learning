@@ -128,8 +128,6 @@ class AgentDQN:
 				while not done:
 					for k in range(K):
 						O, done = self.step(O, history=True, bar=bar)
-						#if done:
-						#	break
 					if self.buffer.n < self.batch_size:
 						continue
 					Os_init, As, Rs, Os_next, Ds = self.buffer.batch(self.batch_size)
