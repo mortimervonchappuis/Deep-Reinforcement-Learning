@@ -98,7 +98,6 @@ class AgentDQN:
 				self.history['L'].append(self.loss)
 				self.history['S'].append(self.score_avr)
 			O_init = self.env.reset()
-			#print(done, R, self.Qs)
 		return O_init, done
 
 
@@ -124,7 +123,6 @@ class AgentDQN:
 		with tqdm(total=episodes) as bar:
 			bar.set_description('Training Agent')
 			for episode in range(episodes):
-				#print('Pre ', np.sum(self.Q.predict(O[None,...]) - self.Q_target.predict(O[None,...])))
 				done = False
 				self.epsilon = max(self.epsilon * self.epsilon_decay, self.epsilon_min)
 				while not done:
@@ -136,31 +134,20 @@ class AgentDQN:
 						continue
 					Os_init, As, Rs, Os_next, Ds = self.buffer.batch(self.batch_size)
 					Qs_target = self.Q_target.predict(Os_next, verbose=0)
-					#print('Os_next:', Os_next)
-					#print(self.buffer.As)
-					#print('Q:', self.Q.predict(Os_next, verbose=0))
-					#print('Q_target:', Qs_target)
 					Q_max = tf.math.reduce_max(Qs_target, axis=1)
 					#print('Q_max:', Q_max.numpy())
 					y = tf.stop_gradient(Rs + (1 - Ds) * self.gamma * Q_max)
-					#print('Y:', y.numpy())
 					with tf.GradientTape() as tape:
 						Qs = tf.gather(self.Q(Os_init), As, axis=1, batch_dims=1)
 						loss = tf.math.squared_difference(y, Qs)
-						#loss = self.Q.mse(y, Qs)
 					gradients = tape.gradient(loss, self.Q.trainable_weights)
 					self.loss = self.loss * self.avr_decay + (1 - self.avr_decay) * loss.numpy().mean()
-					#print(Qs.shape, y.shape, self.Q(Os_init).shape, As.shape)
-					#print('L:', loss.numpy())
-					#print('Q:', Qs.numpy())
-					
 					# POLYAK AVERAGING
 					self.Q.optimizer.apply_gradients(zip(gradients, self.Q.trainable_weights))
 					Q_target_weigths = self.Q_target.get_weights()
 					Q_weights 		 = self.Q.get_weights()
 					polyak_average   = [(1 - self.tau) * Q_t + self.tau * Q for Q_t, Q in zip(Q_target_weigths, Q_weights)]
 					self.Q_target.set_weights(polyak_average)
-					#print('Post', np.sum(self.Q.predict(O[None,...]) - self.Q_target.predict(O[None,...])))
 				bar.update(1)
 				if video_path is not None and episode % 100 == 0:
 					try:
@@ -171,19 +158,14 @@ class AgentDQN:
 
 
 	def construct_video(self, video_path, episode):
-		#import gym 
-		#env = self.env#.clone()
 		env = RecordVideo(self.env, video_folder=video_path + f"/lunar_lander_{episode}")
 		env.start_video_recorder()
 		O = env.reset()
 		done = False
 		while not done:
-			#frame = env.render(mode='rgb_array')
-			#rec.capture_frame()
 			A = self(O)
 			O, R, done, _ = env.step(A)
 		env.close_video_recorder()
-		#env.close()     
 
 
 
