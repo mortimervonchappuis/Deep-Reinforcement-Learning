@@ -38,7 +38,7 @@ class ReplayBuffer:
 		Os_init = self.Os_init[index,...]
 		As		= self.As[index,...]
 		Rs		= self.Rs[index,...]
-		Os_next = self.Os_init[index,...]
+		Os_next = self.Os_next[index,...]
 		Ds 		= self.Ds[index,...]
 		return Os_init, As, Rs, Os_next, Ds
 

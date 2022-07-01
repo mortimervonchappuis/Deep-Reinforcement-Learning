@@ -11,7 +11,6 @@ class DQN(Model):
 		super().__init__(**kwargs)
 		input_shape            = env.observation_space.shape
 		output_shape           = env.action_space.n
-		#self.batch_norm        = BatchNormalization()
 		self.linear_hidden_one = Dense(150, activation=LeakyReLU(alpha=0.2))
 		self.linear_hidden_two = Dense(120, activation=LeakyReLU(alpha=0.2))
 		self.linear_out        = Dense(output_shape, activation=None)
@@ -21,11 +20,8 @@ class DQN(Model):
 
 
 	def call(self, Os):
-		#Xs = self.batch_norm(Os)
 		Xs = self.linear_hidden_one(Os)
-		#Xs = self.activation_one(Xs)
 		Xs = self.linear_hidden_two(Xs)
-		#Xs = self.activation_two(Xs)
 		Qs = self.linear_out(Xs)
 		return Qs
 
