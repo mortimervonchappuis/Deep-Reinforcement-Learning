@@ -40,18 +40,29 @@ class Vanilla:
 					if self.G_avr == None:
 						self.G_avr = G
 					self.G_avr = self.G_avr * self.decay + (1 - self.decay) * G
-					for t, (O, A, R) in enumerate(zip(self.buffer[i]['O'], 
-													  self.buffer[i]['A'], 
-													  self.buffer[i]['R'])):
-						with tf.GradientTape() as tape:
+					target = 0
+					with tf.GradientTape() as tape:
+						for t, (O, A, R) in enumerate(zip(self.buffer[i]['O'], 
+														  self.buffer[i]['A'], 
+														  self.buffer[i]['R'])):
 							P = self.actor.log_prob(O[None, ...], A[None, ...])
-							target = (G - 0*self.G_avr) * P
-							gradients = tape.gradient(-target, self.actor.trainable_weights)
-						self.actor.optimizer.apply_gradients(zip(gradients, self.actor.trainable_weights))
+							target += -(G - 0*self.G_avr) * P
 						G = (G - R)/self.gamma
-					bar.set_postfix({'G': self.G_avr, 'J': target.numpy()})
+						gradients = tape.gradient(target/t, self.actor.trainable_weights)
+					self.actor.optimizer.apply_gradients(zip(gradients, self.actor.trainable_weights))
+					bar.set_postfix({'G': self.G_avr, 'A': As.numpy(), 'J': target.numpy()})
 					self.buffer[i] = {'O': [], 'R': [], 'A': []}
 		self.env.close()
+
+	def show(self, env):
+		Os = env.reset()
+		D = False
+		while not D:
+		  As, Ps = self.actor.actions(Os[None, ...])
+		  print(As)
+		  As = np.nan_to_num(As[0,...])
+		  Os, Rs, D, _ = env.step(As)
+		  env.render()
 
 
 
@@ -64,5 +75,7 @@ if __name__ == '__main__':
 	
 	actor = Actor(env)
 	agent = Vanilla(env, actor)
+	agent.show(gym.make("CarRacing-v1"))
 	agent(256)
 	agent.actor.save_weights('vanilla_128.pd')
+	agent.show(gym.make("CarRacing-v1"))
