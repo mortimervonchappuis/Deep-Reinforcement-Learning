@@ -1,0 +1,2 @@
+model_checkpoint_path: "vanilla_128.pd"
+all_model_checkpoint_paths: "vanilla_128.pd"

@@ -1,7 +1,7 @@
 from tensorflow.keras import Model
 from tensorflow.keras.layers import Dense, Flatten, Conv2D, BatchNormalization
 from tensorflow.keras.optimizers import Adam
-from tensorflow_probability import distributions as tfd
+#from tensorflow_probability import distributions as tfd
 import tensorflow as tf
 from math import tau, sqrt
 
@@ -40,7 +40,7 @@ class Actor(Model):
 
 
 	def log_prob(self, Os, As):
-		Mu, Sigma = self(Os)
+		Mu, Sigma = self(Os.astype(float))
 		Ps_log = tf.math.log(1/(sqrt(tau) * tf.abs(Sigma))) + tf.exp(-1/2 * ((As - Mu)/Sigma)**2)
 		return tf.reduce_sum(Ps_log)
 		#N = tfd.MultivariateNormalDiag(loc=Mu, scale_diag=Sigma)
@@ -48,11 +48,14 @@ class Actor(Model):
 
 
 	def actions(self, Os):
-		Mu, Sigma = self.call(Os)
-		N  = tfd.MultivariateNormalDiag(loc=Mu, scale_diag=Sigma)
-		As = N.sample()
-		Ps = N.log_prob(As)
-		return As.numpy(), Ps.numpy()
+		Mu, Sigma = self(Os.astype(float))
+		#N  = tfd.MultivariateNormalDiag(loc=Mu, scale_diag=Sigma)
+		#As = N.sample()
+		#Ps = N.log_prob(As)
+		epsilon = tf.random.normal(Mu.shape)
+		As = Mu + epsilon * Sigma
+		Ps_log = tf.math.log(1/(sqrt(tau) * tf.abs(Sigma))) + tf.exp(-1/2 * ((As - Mu)/Sigma)**2)
+		return As.numpy(), Ps_log.numpy()
 
 
 

@@ -45,7 +45,7 @@ class Vanilla:
 													  self.buffer[i]['R'])):
 						with tf.GradientTape() as tape:
 							P = self.actor.log_prob(O[None, ...], A[None, ...])
-							target = (G - self.G_avr) * P
+							target = (G - 0*self.G_avr) * P
 							gradients = tape.gradient(-target, self.actor.trainable_weights)
 						self.actor.optimizer.apply_gradients(zip(gradients, self.actor.trainable_weights))
 						G = (G - R)/self.gamma
@@ -59,10 +59,10 @@ class Vanilla:
 if __name__ == '__main__':
 	import gym
 	from model import Actor
-	env = gym.vector.make("CarRacing-v1", num_envs=4)
+	env = gym.vector.make("CarRacing-v1", num_envs=32)
 
 	
 	actor = Actor(env)
 	agent = Vanilla(env, actor)
-	agent(128)
+	agent(256)
 	agent.actor.save_weights('vanilla_128.pd')
