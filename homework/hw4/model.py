@@ -41,8 +41,8 @@ class Actor(Model):
 
 	def log_prob(self, Os, As):
 		Mu, Sigma = self(Os)
-		Ps = 1/(sqrt(tau) * Sigma) * tf.exp(-1/2 * ((As - Mu)/Sigma)**2)
-		return tf.reduce_sum(tf.math.log(Ps))
+		Ps_log = tf.math.log(1/(sqrt(tau) * tf.abs(Sigma))) + tf.exp(-1/2 * ((As - Mu)/Sigma)**2)
+		return tf.reduce_sum(Ps_log)
 		#N = tfd.MultivariateNormalDiag(loc=Mu, scale_diag=Sigma)
 		#return N.log_prob(As)
 
