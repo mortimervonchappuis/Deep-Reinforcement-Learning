@@ -28,16 +28,16 @@ class Actor(Model):
 
 
 	def call(self, Os):
-		scale = 0.01
-		Xs = self.norm_one(Os)
+		Xs = Os / 0xFF
+		#Xs = self.norm_one(Xs)
 		Xs = self.conv_one(Xs)
 		Xs = self.conv_two(Xs)
-		Xs = self.norm_two(Xs)
+		#Xs = self.norm_two(Xs)
 		Xs = self.flatten(Xs)
 		Xs = self.linear(Xs)
 		Mu = self.mu(Xs)
 		Sigma = self.sigma(Xs)
-		return Mu*scale, Sigma*scale
+		return Mu, Sigma
 
 
 	def log_prob(self, Os, As):

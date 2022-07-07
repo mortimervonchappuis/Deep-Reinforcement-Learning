@@ -47,10 +47,10 @@ class Vanilla:
 														  self.buffer[i]['R'])):
 							P = self.actor.log_prob(O[None, ...], A[None, ...])
 							target += -(G - 0*self.G_avr) * P
-						G = (G - R)/self.gamma
+							G = (G - R)/self.gamma
 						gradients = tape.gradient(target/t, self.actor.trainable_weights)
 					self.actor.optimizer.apply_gradients(zip(gradients, self.actor.trainable_weights))
-					bar.set_postfix({'G': self.G_avr, 'A': As.numpy(), 'J': target.numpy()})
+					bar.set_postfix({'G': self.G_avr, 'A': np.max(As), 'J': target.numpy()})
 					self.buffer[i] = {'O': [], 'R': [], 'A': []}
 		self.env.close()
 
@@ -75,7 +75,8 @@ if __name__ == '__main__':
 	
 	actor = Actor(env)
 	agent = Vanilla(env, actor)
+	agent.actor.load_weights('vanilla_128.pd')
 	agent.show(gym.make("CarRacing-v1"))
-	agent(256)
+	agent(512)
 	agent.actor.save_weights('vanilla_128.pd')
 	agent.show(gym.make("CarRacing-v1"))
