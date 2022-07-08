@@ -20,8 +20,8 @@ class Actor(Model):
 		self.norm_two  = BatchNormalization()
 		self.flatten   = Flatten()
 		self.linear    = Dense(256, activation='relu', name='linear')
-		self.mu        = Dense(*output_shape, activation=None, name='output_mu')
-		self.sigma     = Dense(*output_shape, activation=None, name='output_sigma')
+		self.mu        = Dense(*output_shape, activation=None,   name='output_mu')
+		self.sigma     = Dense(*output_shape, activation='selu', name='output_sigma')
 		self.optimizer = Adam(learning_rate=learning_rate)
 		self.build((1, *input_shape))
 
@@ -29,7 +29,7 @@ class Actor(Model):
 
 	def call(self, Os):
 		Xs = Os / 0xFF
-		#Xs = self.norm_one(Xs)
+		Xs = self.norm_one(Xs)
 		Xs = self.conv_one(Xs)
 		Xs = self.conv_two(Xs)
 		#Xs = self.norm_two(Xs)
@@ -37,12 +37,13 @@ class Actor(Model):
 		Xs = self.linear(Xs)
 		Mu = self.mu(Xs)
 		Sigma = self.sigma(Xs)
-		return Mu, Sigma
+		return Mu, Sigma + 1e-8
 
 
 	def log_prob(self, Os, As):
 		Mu, Sigma = self(Os.astype(float))
-		Ps_log = tf.math.log(1/(sqrt(tau) * tf.abs(Sigma))) + tf.exp(-1/2 * ((As - Mu)/Sigma)**2)
+		print(Mu[0,:], Sigma[0,:])
+		Ps_log = -tf.math.log(sqrt(tau) * Sigma) -1/2 * ((As - Mu)/Sigma)**2
 		return tf.reduce_sum(Ps_log)
 		#N = tfd.MultivariateNormalDiag(loc=Mu, scale_diag=Sigma)
 		#return N.log_prob(As)
@@ -55,7 +56,7 @@ class Actor(Model):
 		#Ps = N.log_prob(As)
 		epsilon = tf.random.normal(Mu.shape)
 		As = Mu + epsilon * Sigma
-		Ps_log = tf.math.log(1/(sqrt(tau) * tf.abs(Sigma))) + tf.exp(-1/2 * ((As - Mu)/Sigma)**2)
+		Ps_log = tf.math.log(1/(sqrt(tau) * tf.abs(Sigma))) -1/2 * ((As - Mu)/Sigma)**2
 		return As.numpy(), Ps_log.numpy()
 
 
