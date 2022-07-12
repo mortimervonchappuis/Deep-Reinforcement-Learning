@@ -8,7 +8,7 @@ from math import tau, sqrt
 
 
 class Actor(Model):
-	def __init__(self, env, learning_rate=1e-3, **kwargs):
+	def __init__(self, env, learning_rate=1e-4, **kwargs):
 		super().__init__(**kwargs)
 		input_shape    = env.observation_space.shape[1:]
 		output_shape   = env.action_space.shape[1:]
@@ -20,8 +20,8 @@ class Actor(Model):
 		self.norm_two  = BatchNormalization()
 		self.flatten   = Flatten()
 		self.linear    = Dense(256, activation='relu', name='linear')
-		self.mu        = Dense(*output_shape, activation=None,   name='output_mu')
-		self.sigma     = Dense(*output_shape, activation='selu', name='output_sigma')
+		self.mu        = Dense(*output_shape, activation=None, name='output_mu')
+		self.sigma     = Dense(*output_shape, activation='elu', name='output_sigma')
 		self.optimizer = Adam(learning_rate=learning_rate)
 		self.build((1, *input_shape))
 
@@ -37,12 +37,12 @@ class Actor(Model):
 		Xs = self.linear(Xs)
 		Mu = self.mu(Xs)
 		Sigma = self.sigma(Xs)
-		return Mu, Sigma + 1e-8
+		return Mu, Sigma + 1
 
 
 	def log_prob(self, Os, As):
 		Mu, Sigma = self(Os.astype(float))
-		print(Mu[0,:], Sigma[0,:])
+		print(Mu[0,:].numpy(), Sigma[0,:].numpy())
 		Ps_log = -tf.math.log(sqrt(tau) * Sigma) -1/2 * ((As - Mu)/Sigma)**2
 		return tf.reduce_sum(Ps_log)
 		#N = tfd.MultivariateNormalDiag(loc=Mu, scale_diag=Sigma)
@@ -56,7 +56,7 @@ class Actor(Model):
 		#Ps = N.log_prob(As)
 		epsilon = tf.random.normal(Mu.shape)
 		As = Mu + epsilon * Sigma
-		Ps_log = tf.math.log(1/(sqrt(tau) * tf.abs(Sigma))) -1/2 * ((As - Mu)/Sigma)**2
+		Ps_log = -tf.math.log(sqrt(tau) * Sigma) -1/2 * ((As - Mu)/Sigma)**2
 		return As.numpy(), Ps_log.numpy()
 
 

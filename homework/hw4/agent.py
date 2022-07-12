@@ -10,7 +10,7 @@ import gym
 
 
 class Vanilla: # BORING
-	def __init__(self, env_name, n_proc, actor, gamma=0.999, decay=0.99, max_t=None):
+	def __init__(self, env_name, n_proc, actor, gamma=0.999, decay=0.9, max_t=None):
 		self.envs   = gym.vector.make(env_name, n_proc)
 		self.n_proc = n_proc
 		self.actor  = actor(self.envs)
@@ -29,11 +29,12 @@ class Vanilla: # BORING
 				bar.set_description('SAMPLING')
 				As, Ps = self.actor.actions(Os)
 				#As = np.nan_to_num(As)
-				Os, Rs, Ds, _ = self.envs.step(As)
+				Os_next, Rs, Ds, _ = self.envs.step(As)
 				for i in range(self.n_proc):
 					self.buffer[i]['O'].append(Os[i])
 					self.buffer[i]['A'].append(As[i])
 					self.buffer[i]['R'].append(Rs[i])
+				Os = Os_next
 				if np.any(Ds):
 					bar.set_description('TRAINING')
 					bar.update(1)
@@ -50,7 +51,7 @@ class Vanilla: # BORING
 							Ps = self.actor.log_prob(Os, As)
 							Gs = np.empty(len(self.buffer[i]['R']))
 							for t, R in enumerate(self.buffer[i]['R']):
-								Gs[t] = G * self.gamma**t
+								Gs[t] = G #* self.gamma**t
 								G = (G - R)/self.gamma
 							target += tf.reduce_mean(-Gs * Ps)
 							self.buffer[i] = {'O': [], 'R': [], 'A': []}
@@ -79,9 +80,10 @@ if __name__ == '__main__':
 
 	agent = Vanilla(env_name="CarRacing-v1", n_proc=4, actor=Actor)
 	env = gym.make("CarRacing-v1")
-	agent.actor.load_weights('vanilla_init.pd')
+	agent.actor.load_weights('vanilla_768_nobase.pd')
 	#agent.show(env)
-	agent(16)
-	#agent.actor.save_weights('vanilla_16_base.pd')
-	agent.actor.load_weights('vanilla_16_base.pd')
-	agent.show(env)
+	agent(256)
+	agent.actor.save_weights('vanilla_1024_nobase.pd')
+	#agent.actor.load_weights('vanilla_768_nobase.pd')
+	#agent.show(env)
+
