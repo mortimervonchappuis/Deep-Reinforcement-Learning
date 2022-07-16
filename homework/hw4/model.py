@@ -60,7 +60,7 @@ class Actor(Model):
 
 
 class Critic(Model):
-	def __init__(self, env, learning_rate=1e-4, **kwargs):
+	def __init__(self, env, learning_rate=1e-3, **kwargs):
 		super().__init__(**kwargs)
 		input_shape    = env.observation_space.shape[1:]
 		output_shape   = env.action_space.shape[1:]

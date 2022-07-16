@@ -85,7 +85,7 @@ class Vanilla: # BORING
 
 
 class PPO:
-	def __init__(self, env_name, n_proc, actor, critic, gamma=0.99, epsilon=0.2, target_kl=0.02, decay=0.9):
+	def __init__(self, env_name, n_proc, actor, critic, gamma=0.99, epsilon=0.2, target_kl=0.03, decay=0.9):
 		self.envs      = gym.vector.make(env_name, n_proc)
 		self.n_proc    = n_proc
 		self.actor     = actor(self.envs)
@@ -212,11 +212,11 @@ if __name__ == '__main__':
 	#agent.actor.load_weights('vanilla_768_nobase.pd')
 	#agent.show(env)
 
-	agent = PPO(env_name="CarRacing-v1", n_proc=2, actor=Actor, critic=Critic)
-	history = agent(1024, 10)
-	agent.envs.close()
-	#plt.plot(range(len(history)), history)
-	#plt.show()
+	agent = PPO(env_name="CarRacing-v1", n_proc=16, actor=Actor, critic=Critic)
+	history = agent(100, 20)
+	#agent.envs.close()
+	plt.plot(range(len(history)), history)
+	plt.show()
 
 	#agent.actor.load_weights('breakthrough.pd')
 	#agent.show(env)
