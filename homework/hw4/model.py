@@ -3,7 +3,7 @@ from tensorflow.keras.layers import Dense, Flatten, Conv2D, BatchNormalization
 from tensorflow.keras.optimizers import Adam
 #from tensorflow_probability import distributions as tfd
 import tensorflow as tf
-from math import tau, sqrt
+from math import tau, sqrt, log
 
 
 
@@ -20,7 +20,7 @@ class Actor(Model):
 		self.norm_two  = BatchNormalization()
 		self.flatten   = Flatten()
 		self.linear    = Dense(256, activation='relu', name='linear')
-		self.mu        = Dense(*output_shape, activation=None, name='output_mu')
+		self.mu        = Dense(*output_shape, activation='tanh', name='output_mu')
 		self.sigma     = Dense(*output_shape, activation='elu', name='output_sigma')
 		self.optimizer = Adam(learning_rate=learning_rate)
 		self.build((1, *input_shape))
@@ -44,7 +44,7 @@ class Actor(Model):
 		Mu, Sigma = self(Os.astype(float))
 		print(Mu[0,:].numpy(), Sigma[0,:].numpy())
 		Ps_log = -tf.math.log(sqrt(tau) * Sigma) -1/2 * ((As - Mu)/Sigma)**2
-		return tf.reduce_sum(Ps_log)
+		return tf.reduce_sum(Ps_log, axis=1)
 		#N = tfd.MultivariateNormalDiag(loc=Mu, scale_diag=Sigma)
 		#return N.log_prob(As)
 
@@ -57,7 +57,7 @@ class Actor(Model):
 		epsilon = tf.random.normal(Mu.shape)
 		As = Mu + epsilon * Sigma
 		Ps_log = -tf.math.log(sqrt(tau) * Sigma) -1/2 * ((As - Mu)/Sigma)**2
-		return As.numpy(), Ps_log.numpy()
+		return As.numpy(), tf.reduce_sum(Ps_log, axis=1).numpy()
 
 
 

@@ -1,2 +1,2 @@
-model_checkpoint_path: "vanilla_768_nobase.pd"
-all_model_checkpoint_paths: "vanilla_768_nobase.pd"
+model_checkpoint_path: "vanilla_1024_bases.pd"
+all_model_checkpoint_paths: "vanilla_1024_bases.pd"
