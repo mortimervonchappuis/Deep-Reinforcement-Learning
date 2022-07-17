@@ -29,7 +29,6 @@ class Vanilla: # BORING
 			while episode < episodes:
 				bar.set_description('SAMPLING')
 				A, P = self.actor.actions(O)
-				#As = np.nan_to_num(As)
 				O_next, R, D, _ = self.envs.step(A)
 				for i in range(self.n_proc):
 					self.buffer[i]['O'].append(O[i])
@@ -48,7 +47,7 @@ class Vanilla: # BORING
 										 for t, R in enumerate(self.buffer[j]['R']))/self.n_proc
 						score = sum(sum(x['R']) for x in self.buffer)/self.n_proc
 						if score > score_max:
-							self.actor.save_weights('breakthrough.pd')
+							self.actor.save_weights('PG_best.pd')
 							score_max = score
 						self.scores.append(score)
 						for i in range(self.n_proc):
@@ -152,14 +151,12 @@ class PPO:
 		Vs_one	 = self.critic(Os_one_k)
 		Vs_two	 = self.critic(Os_two_k)
 		adv 	 = Rs_k + self.gamma * Vs_two - Vs_one
-		#print(Rs_k.shape, Vs_one.shape, Vs_two.shape, adv.shape)
 		Ps_k 	 = self.actor.prob(Os_one_k, As_k)
 		Os_k 	 = Os_one_k
 		for n in range(iterations):
 			with tf.GradientTape() as tape:
 				# CHECK KL DIVERGENCE
 				Ps = self.actor.prob(Os_k, As_k)
-				#KL = tf.reduce_sum(Ps * tf.math.log(Ps) - Ps * tf.math.log(Ps_k))
 				KL = tf.reduce_sum(Ps_k * tf.math.log(Ps_k) - Ps_k * tf.math.log(Ps))
 				if KL > self.target_KL:
 					break
@@ -167,7 +164,6 @@ class PPO:
 				ratio = Ps / Ps_k
 				clip = tf.clip_by_value(ratio, 1 - self.epsilon, 1 + self.epsilon)
 				target = tf.math.minimum(adv * ratio, adv * clip)
-				#print(target.shape, clip.shape, ratio.shape, adv.shape)
 				target = tf.reduce_mean(-target)
 				gradients = tape.gradient(target, self.actor.trainable_weights)
 				self.actor.optimizer.apply_gradients(zip(gradients, self.actor.trainable_weights))
@@ -199,7 +195,6 @@ class PPO:
 		D = False
 		while not D:
 		  As, Ps = self.actor.actions(Os[None, ...])
-		  print(self.critic(Os[None, ...]).numpy())
 		  As = np.nan_to_num(As[0,...])
 		  Os, Rs, D, _ = env.step(As)
 		  env.render()
@@ -212,18 +207,22 @@ if __name__ == '__main__':
 	from model import Actor, Critic
 	from matplotlib import pyplot as plt
 
-	#agent = Vanilla(env_name="CarRacing-v1", n_proc=16, actor=Actor)
 	env = gym.make("CarRacing-v1")
-	#agent.actor.load_weights('breakthrough.pd')
-	#agent.actor.load_weights('vanilla_768_nobase.pd')
-	#agent.show(env)
+
+	# VANILLA POLICY GRADIENTS
+
+	#agent = Vanilla(env_name="CarRacing-v1", n_proc=16, actor=Actor)
+	#history = agent(256)
+	#agent.actor.load_weights('PG_best.pd')
+	#plt.plot(range(len(history)), history)
+	#plt.show()
+
+	# PROXIMAL POLICY OPTIMIZATION
 
 	agent = PPO(env_name="CarRacing-v1", n_proc=16, actor=Actor, critic=Critic)
 	agent.actor.load_weights('PPO_best_actor.pd')
 	agent.critic.load_weights('PPO_best_critic.pd')
 	#history = agent(256, 20)
-	#agent.actor.save_weights('PPO_256_actor.pd')
-	#agent.critic.save_weights('PPO_256_critic.pd')
 	#plt.plot(range(len(history)), history)
 	#plt.show()
 
