@@ -8,7 +8,7 @@ from math import tau, sqrt, log
 
 
 class Actor(Model):
-	def __init__(self, env, learning_rate=3e-4, **kwargs):
+	def __init__(self, env, learning_rate=1e-4, **kwargs):
 		super().__init__(**kwargs)
 		input_shape    = env.observation_space.shape[1:]
 		output_shape   = env.action_space.shape[1:]
@@ -41,7 +41,6 @@ class Actor(Model):
 
 	def log_prob(self, Os, As):
 		Mu, Sigma = self(Os.astype(float))
-		print(Mu[0,:].numpy(), Sigma[0,:].numpy())
 		Ps_log = -tf.math.log(sqrt(tau) * Sigma) -1/2 * ((As - Mu)/Sigma)**2
 		return tf.reduce_sum(Ps_log, axis=1)
 

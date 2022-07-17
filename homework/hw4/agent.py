@@ -85,7 +85,7 @@ class Vanilla: # BORING
 
 class PPO:
 	def __init__(self, env_name, n_proc, actor, critic, 
-		gamma=0.99, epsilon=0.2, target_KL=0.03, decay=0.9):
+		gamma=0.99, epsilon=0.2, target_KL=0.01):
 		self.envs      = gym.vector.make(env_name, n_proc)
 		self.n_proc    = n_proc
 		self.actor     = actor(self.envs)
@@ -93,7 +93,6 @@ class PPO:
 		self.gamma     = gamma
 		self.epsilon   = epsilon
 		self.target_KL = target_KL
-		self.decay     = decay
 		self.buffer    = [{'O_one': [], 'R': [], 'A': [], 'O_two': []} for _ in range(self.n_proc)]
 
 
@@ -222,7 +221,7 @@ if __name__ == '__main__':
 	agent = PPO(env_name="CarRacing-v1", n_proc=16, actor=Actor, critic=Critic)
 	agent.actor.load_weights('PPO_best_actor.pd')
 	agent.critic.load_weights('PPO_best_critic.pd')
-	#history = agent(256, 20)
+	#history = agent(128, 20)
 	#plt.plot(range(len(history)), history)
 	#plt.show()
 
