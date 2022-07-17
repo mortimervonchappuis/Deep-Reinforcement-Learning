@@ -8,7 +8,7 @@ from math import tau, sqrt, log
 
 
 class Actor(Model):
-	def __init__(self, env, learning_rate=1e-4, **kwargs):
+	def __init__(self, env, learning_rate=3e-4, **kwargs):
 		super().__init__(**kwargs)
 		input_shape    = env.observation_space.shape[1:]
 		output_shape   = env.action_space.shape[1:]
@@ -85,7 +85,7 @@ class Critic(Model):
 		Xs = self.conv_two(Xs)
 		Xs = self.flatten(Xs)
 		Xs = self.linear(Xs)
-		return self.value(Xs)
+		return self.value(Xs)[:,0]
 
 
 if __name__ == '__main__':

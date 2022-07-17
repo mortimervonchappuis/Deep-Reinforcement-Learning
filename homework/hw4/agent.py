@@ -85,14 +85,15 @@ class Vanilla: # BORING
 
 
 class PPO:
-	def __init__(self, env_name, n_proc, actor, critic, gamma=0.99, epsilon=0.2, target_kl=0.03, decay=0.9):
+	def __init__(self, env_name, n_proc, actor, critic, 
+		gamma=0.99, epsilon=0.2, target_KL=0.03, decay=0.9):
 		self.envs      = gym.vector.make(env_name, n_proc)
 		self.n_proc    = n_proc
 		self.actor     = actor(self.envs)
 		self.critic    = critic(self.envs)
 		self.gamma     = gamma
 		self.epsilon   = epsilon
-		self.target_kl = target_kl
+		self.target_KL = target_KL
 		self.decay     = decay
 		self.buffer    = [{'O_one': [], 'R': [], 'A': [], 'O_two': []} for _ in range(self.n_proc)]
 
@@ -151,19 +152,22 @@ class PPO:
 		Vs_one	 = self.critic(Os_one_k)
 		Vs_two	 = self.critic(Os_two_k)
 		adv 	 = Rs_k + self.gamma * Vs_two - Vs_one
+		#print(Rs_k.shape, Vs_one.shape, Vs_two.shape, adv.shape)
 		Ps_k 	 = self.actor.prob(Os_one_k, As_k)
 		Os_k 	 = Os_one_k
 		for n in range(iterations):
 			with tf.GradientTape() as tape:
 				# CHECK KL DIVERGENCE
 				Ps = self.actor.prob(Os_k, As_k)
-				kl = tf.reduce_sum(Ps * tf.math.log(Ps) - Ps * tf.math.log(Ps_k)) 
-				if kl > self.target_kl:
+				#KL = tf.reduce_sum(Ps * tf.math.log(Ps) - Ps * tf.math.log(Ps_k))
+				KL = tf.reduce_sum(Ps_k * tf.math.log(Ps_k) - Ps_k * tf.math.log(Ps))
+				if KL > self.target_KL:
 					break
 				# POLICY UPDATE
 				ratio = Ps / Ps_k
 				clip = tf.clip_by_value(ratio, 1 - self.epsilon, 1 + self.epsilon)
 				target = tf.math.minimum(adv * ratio, adv * clip)
+				#print(target.shape, clip.shape, ratio.shape, adv.shape)
 				target = tf.reduce_mean(-target)
 				gradients = tape.gradient(target, self.actor.trainable_weights)
 				self.actor.optimizer.apply_gradients(zip(gradients, self.actor.trainable_weights))
@@ -195,6 +199,7 @@ class PPO:
 		D = False
 		while not D:
 		  As, Ps = self.actor.actions(Os[None, ...])
+		  print(self.critic(Os[None, ...]).numpy())
 		  As = np.nan_to_num(As[0,...])
 		  Os, Rs, D, _ = env.step(As)
 		  env.render()
@@ -209,14 +214,17 @@ if __name__ == '__main__':
 
 	#agent = Vanilla(env_name="CarRacing-v1", n_proc=16, actor=Actor)
 	env = gym.make("CarRacing-v1")
+	#agent.actor.load_weights('breakthrough.pd')
 	#agent.actor.load_weights('vanilla_768_nobase.pd')
 	#agent.show(env)
 
 	agent = PPO(env_name="CarRacing-v1", n_proc=16, actor=Actor, critic=Critic)
-	history = agent(100, 20)
-	#agent.envs.close()
-	plt.plot(range(len(history)), history)
-	plt.show()
+	agent.actor.load_weights('PPO_best_actor.pd')
+	agent.critic.load_weights('PPO_best_critic.pd')
+	#history = agent(256, 20)
+	#agent.actor.save_weights('PPO_256_actor.pd')
+	#agent.critic.save_weights('PPO_256_critic.pd')
+	#plt.plot(range(len(history)), history)
+	#plt.show()
 
-	#agent.actor.load_weights('breakthrough.pd')
-	#agent.show(env)
+	agent.show(env)
